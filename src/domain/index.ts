@@ -1,0 +1,1 @@
+export { STORE_INFO } from './storeInfo';
