@@ -23,6 +23,24 @@ export class ChatService {
     sessionId: string;
     status: "success" | "error";
   }> {
+    // Input validation
+    const trimmedMessage = input.message.trim();
+    if (!trimmedMessage) {
+      return {
+        reply: null,
+        sessionId: input.sessionId || "",
+        status: "error"
+      };
+    }
+
+    if (trimmedMessage.length > 2000) {
+      return {
+        reply: null,
+        sessionId: input.sessionId || "",
+        status: "error"
+      };
+    }
+
     let conversation;
     let sessionId = input.sessionId;
 
@@ -56,7 +74,7 @@ export class ChatService {
     const userMessage = await this.messageModel.create({
       conversationId: conversation._id,
       sender: "user",
-      text: input.message,
+      text: trimmedMessage,
       status: "success",
       createdAt: new Date(),
     });
