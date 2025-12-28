@@ -14,6 +14,27 @@ export class ChatService {
   }
 
   async handleIncomingMessage(input: { message: string; sessionId?: string }): Promise<{ reply: string | null; sessionId: string; status: "success" | "error" }> {
-    throw new Error("Not implemented");
+    let conversation;
+    let sessionId = input.sessionId;
+
+    if (input.sessionId) {
+      // Attempt to find the Conversation by ID
+      conversation = await this.conversationModel.findById(input.sessionId).exec();
+
+      if (!conversation) {
+        // If not found, return error object
+        return { reply: null, sessionId: input.sessionId, status: "error" };
+      }
+    } else {
+      // Create a new Conversation with createdAt = new Date()
+      conversation = new this.conversationModel({
+        createdAt: new Date()
+      });
+      await conversation.save();
+      sessionId = conversation._id.toString();
+    }
+
+    // Return temporary success response
+    return { reply: null, sessionId, status: "success" };
   }
 }
