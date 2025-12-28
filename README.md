@@ -209,6 +209,12 @@ The emphasis here was on:
 
 ---
 
+## Security Considerations
+
+The backend enforces strict input validation, basic rate limiting, and explicit CORS configuration to reduce abuse and unintended access. Authentication was intentionally excluded to keep scope aligned with the assignment, but the architecture supports user-scoped conversations if added later.
+
+---
+
 ## If I Had More Time
 
 - User authentication and user-scoped conversations  
