@@ -99,17 +99,35 @@ Please provide helpful and accurate responses to customer inquiries based on thi
       aiStatus = "success";
     } else {
       errorCode = llmResult.errorCode;
+      // Log error when llmResult.success === false
+      console.error({
+        source: "LLM",
+        conversationId: conversation._id,
+        userMessageId: userMessage._id,
+        errorCode: errorCode
+      });
     }
 
-    await this.messageModel.create({
-      conversationId: conversation._id,
-      sender: "ai",
-      text: aiText,
-      status: aiStatus,
-      errorCode,
-      replyToMessageId: userMessage._id,
-      createdAt: new Date(),
-    });
+    try {
+      await this.messageModel.create({
+        conversationId: conversation._id,
+        sender: "ai",
+        text: aiText,
+        status: aiStatus,
+        errorCode,
+        replyToMessageId: userMessage._id,
+        createdAt: new Date(),
+      });
+    } catch (error) {
+      // Log error if AI Message.create throws
+      console.error({
+        source: "PERSISTENCE",
+        conversationId: conversation._id,
+        userMessageId: userMessage._id,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+      throw error; // Re-throw the error
+    }
 
     // Return the AI text or null, sessionId, and success status
     return {
