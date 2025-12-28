@@ -1,10 +1,16 @@
 import { Router } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { ChatService } from '../services/chat.service';
 
 const router = Router();
 const chatService = new ChatService();
 
-router.post('/message', async (req, res) => {
+const chatRateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 20 // limit each IP to 20 requests per windowMs
+});
+
+router.post('/message', chatRateLimiter, async (req, res) => {
   try {
     const { message, sessionId } = req.body;
     const result = await chatService.handleIncomingMessage({ message, sessionId });
