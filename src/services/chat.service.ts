@@ -1,6 +1,8 @@
 import { LLMService } from './llm.service';
 import { Conversation } from '../db/models/conversation.model';
 import { Message } from '../db/models/message.model';
+import { STORE_INFO } from '../domain/storeInfo';
+import { MAX_HISTORY_MESSAGES } from '../config';
 
 export class ChatService {
   private readonly llmService: LLMService;
@@ -43,10 +45,34 @@ export class ChatService {
       createdAt: new Date()
     });
 
-    // Call llmService.generateReply with temporary systemPrompt and empty history
+    // Fetch recent messages for the conversation
+    const recentMessages = await this.messageModel
+      .find({ conversationId: conversation._id })
+      .sort({ createdAt: 1 })
+      .limit(MAX_HISTORY_MESSAGES)
+      .exec();
+
+    // Map messages to LLM history format
+    const history = recentMessages
+      .filter(message => message.sender === 'user' || message.sender === 'ai')
+      .map(message => ({
+        role: message.sender === 'user' ? 'user' : 'assistant',
+        content: message.text
+      }));
+
+    // Build systemPrompt string using domain data
+    const systemPrompt = `You are a helpful support agent for ${STORE_INFO.name}.
+
+Support Hours: ${STORE_INFO.supportHours}
+Shipping Policy: ${STORE_INFO.shippingPolicy}
+Return Policy: ${STORE_INFO.returnPolicy}
+
+Please provide helpful and accurate responses to customer inquiries based on this information.`;
+
+    // Call llmService.generateReply with systemPrompt, history, and userMessage
     const llmResult = await this.llmService.generateReply({
-      systemPrompt: "You are a helpful support agent.",
-      history: [],
+      systemPrompt,
+      history,
       userMessage: input.message
     });
 
