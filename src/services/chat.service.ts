@@ -34,7 +34,44 @@ export class ChatService {
       sessionId = conversation._id.toString();
     }
 
-    // Return temporary success response
-    return { reply: null, sessionId, status: "success" };
+    // Persist the user message
+    await this.messageModel.create({
+      conversationId: conversation._id,
+      sender: "user",
+      text: input.message,
+      status: "success",
+      createdAt: new Date()
+    });
+
+    // Call llmService.generateReply with temporary systemPrompt and empty history
+    const llmResult = await this.llmService.generateReply({
+      systemPrompt: "You are a helpful support agent.",
+      history: [],
+      userMessage: input.message
+    });
+
+    // Persist the AI message
+    let aiText = "";
+    let aiStatus = "error";
+    let errorCode;
+
+    if (llmResult.success) {
+      aiText = llmResult.text || "";
+      aiStatus = "success";
+    } else {
+      errorCode = llmResult.errorCode;
+    }
+
+    await this.messageModel.create({
+      conversationId: conversation._id,
+      sender: "ai",
+      text: aiText,
+      status: aiStatus,
+      errorCode,
+      createdAt: new Date()
+    });
+
+    // Return the AI text or null, sessionId, and success status
+    return { reply: llmResult.text, sessionId, status: "success" };
   }
 }
