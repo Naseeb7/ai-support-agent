@@ -1,4 +1,4 @@
-import { LLM_MODEL, LLM_TIMEOUT_MS } from '../config';
+import { LLM_MODEL, LLM_TIMEOUT_MS, LLM_MAX_TOKENS, OPENAI_API_KEY } from '../config';
 
 export class LLMService {
   async generateReply(input: {
@@ -19,7 +19,7 @@ export class LLMService {
         model: LLM_MODEL,
         messages: messages,
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: LLM_MAX_TOKENS
       };
 
       // Create the request with timeout
@@ -30,7 +30,7 @@ export class LLMService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal
@@ -45,8 +45,15 @@ export class LLMService {
       const data = await response.json();
       const text = data.choices[0]?.message?.content || null;
 
+      if (!text) {
+        return { text: null, success: false, errorCode: 'LLM_EMPTY_RESPONSE' };
+      }
+
       return { text, success: true };
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return { text: null, success: false, errorCode: 'LLM_TIMEOUT' };
+      }
       return { text: null, success: false, errorCode: 'LLM_ERROR' };
     }
   }
