@@ -1,8 +1,8 @@
-import { LLMService } from './llm.service';
-import { Conversation } from '../db/models/conversation.model';
-import { Message } from '../db/models/message.model';
-import { STORE_INFO } from '../domain/storeInfo';
-import { MAX_HISTORY_MESSAGES } from '../config';
+import { LLMService } from "./llm.service";
+import { Conversation } from "../db/models/conversation.model";
+import { Message } from "../db/models/message.model";
+import { STORE_INFO } from "../domain/storeInfo";
+import { MAX_HISTORY_MESSAGES } from "../config";
 
 export class ChatService {
   private readonly llmService: LLMService;
@@ -15,13 +15,22 @@ export class ChatService {
     this.messageModel = Message;
   }
 
-  async handleIncomingMessage(input: { message: string; sessionId?: string }): Promise<{ reply: string | null; sessionId: string; status: "success" | "error" }> {
+  async handleIncomingMessage(input: {
+    message: string;
+    sessionId?: string;
+  }): Promise<{
+    reply: string | null;
+    sessionId: string;
+    status: "success" | "error";
+  }> {
     let conversation;
     let sessionId = input.sessionId;
 
     if (input.sessionId) {
       // Attempt to find the Conversation by ID
-      conversation = await this.conversationModel.findById(input.sessionId).exec();
+      conversation = await this.conversationModel
+        .findById(input.sessionId)
+        .exec();
 
       if (!conversation) {
         // If not found, return error object
@@ -30,20 +39,11 @@ export class ChatService {
     } else {
       // Create a new Conversation with createdAt = new Date()
       conversation = new this.conversationModel({
-        createdAt: new Date()
+        createdAt: new Date(),
       });
       await conversation.save();
       sessionId = conversation._id.toString();
     }
-
-    // Persist the user message
-    await this.messageModel.create({
-      conversationId: conversation._id,
-      sender: "user",
-      text: input.message,
-      status: "success",
-      createdAt: new Date()
-    });
 
     // Fetch recent messages for the conversation
     const recentMessages = await this.messageModel
@@ -52,12 +52,25 @@ export class ChatService {
       .limit(MAX_HISTORY_MESSAGES)
       .exec();
 
+    // Persist the user message
+    await this.messageModel.create({
+      conversationId: conversation._id,
+      sender: "user",
+      text: input.message,
+      status: "success",
+      createdAt: new Date(),
+    });
+
     // Map messages to LLM history format
     const history = recentMessages
-      .filter(message => message.sender === 'user' || message.sender === 'ai')
-      .map(message => ({
-        role: message.sender === 'user' ? 'user' : 'assistant',
-        content: message.text
+      .filter(
+        (message) =>
+          message.sender === "user" ||
+          (message.sender === "ai" && message.status === "success")
+      )
+      .map((message) => ({
+        role: message.sender === "user" ? "user" : "assistant",
+        content: message.text,
       }));
 
     // Build systemPrompt string using domain data
@@ -73,7 +86,7 @@ Please provide helpful and accurate responses to customer inquiries based on thi
     const llmResult = await this.llmService.generateReply({
       systemPrompt,
       history,
-      userMessage: input.message
+      userMessage: input.message,
     });
 
     // Persist the AI message
@@ -94,10 +107,15 @@ Please provide helpful and accurate responses to customer inquiries based on thi
       text: aiText,
       status: aiStatus,
       errorCode,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
     // Return the AI text or null, sessionId, and success status
-    return { reply: llmResult.text, sessionId, status: "success" };
+    return {
+  reply: llmResult.text,
+  sessionId,
+  status: llmResult.success ? "success" : "error"
+};
+
   }
 }
