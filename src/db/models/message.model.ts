@@ -7,6 +7,7 @@ const messageSchema = new mongoose.Schema({
   text: { type: String, required: false, default: null },
   status: { type: String, enum: ['success', 'error'], required: true },
   errorCode: String,
+  replyToMessageId: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', index: true },
   createdAt: { type: Date, required: true }
 });
 

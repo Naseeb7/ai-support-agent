@@ -53,7 +53,7 @@ export class ChatService {
       .exec();
 
     // Persist the user message
-    await this.messageModel.create({
+    const userMessage = await this.messageModel.create({
       conversationId: conversation._id,
       sender: "user",
       text: input.message,
@@ -107,6 +107,7 @@ Please provide helpful and accurate responses to customer inquiries based on thi
       text: aiText,
       status: aiStatus,
       errorCode,
+      replyToMessageId: userMessage._id,
       createdAt: new Date(),
     });
 
