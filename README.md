@@ -225,6 +225,23 @@ The backend enforces strict input validation, basic rate limiting, and explicit 
 
 ---
 
+## Repositories
+
+- **Backend (this repo)**  
+  API, persistence, and LLM integration
+
+- **Frontend**  
+  https://github.com/Naseeb7/ai-support-agent-frontend
+
+---
+
+## Live Demo
+
+- Backend API: https://ai-support-agent-3uwt.onrender.com
+- Frontend App: https://ai-support-agent-frontend.vercel.app/
+
+---
+
 ## Final Note
 
 This project is intentionally boring in the best way.
