@@ -29,7 +29,7 @@ export class ChatService {
       return {
         reply: null,
         sessionId: input.sessionId || "",
-        status: "error"
+        status: "error",
       };
     }
 
@@ -37,7 +37,7 @@ export class ChatService {
       return {
         reply: null,
         sessionId: input.sessionId || "",
-        status: "error"
+        status: "error",
       };
     }
 
@@ -80,16 +80,19 @@ export class ChatService {
     });
 
     // Map messages to LLM history format
-    const history = recentMessages
-      .filter(
-        (message) =>
-          message.sender === "user" ||
-          (message.sender === "ai" && message.status === "success")
-      )
-      .map((message) => ({
-        role: message.sender === "user" ? "user" : "assistant",
-        content: message.text,
-      }));
+    const history: { role: "user" | "assistant"; content: string }[] =
+      recentMessages
+        .filter(
+          (message) =>
+            (message.sender === "user" && typeof message.text === "string") ||
+            (message.sender === "ai" &&
+              message.status === "success" &&
+              typeof message.text === "string")
+        )
+        .map((message) => ({
+          role: message.sender === "user" ? "user" : "assistant",
+          content: message.text as string,
+        }));
 
     // Build systemPrompt string using domain data
     const systemPrompt = `You are a helpful support agent for ${STORE_INFO.name}.
@@ -122,7 +125,7 @@ Please provide helpful and accurate responses to customer inquiries based on thi
         source: "LLM",
         conversationId: conversation._id,
         userMessageId: userMessage._id,
-        errorCode: errorCode
+        errorCode: errorCode,
       });
     }
 
@@ -142,17 +145,16 @@ Please provide helpful and accurate responses to customer inquiries based on thi
         source: "PERSISTENCE",
         conversationId: conversation._id,
         userMessageId: userMessage._id,
-        errorMessage: error instanceof Error ? error.message : String(error)
+        errorMessage: error instanceof Error ? error.message : String(error),
       });
       throw error; // Re-throw the error
     }
 
     // Return the AI text or null, sessionId, and success status
     return {
-  reply: llmResult.text,
-  sessionId,
-  status: llmResult.success ? "success" : "error"
-};
-
+      reply: llmResult.text,
+      sessionId: sessionId ?? "",
+      status: llmResult.success ? "success" : "error",
+    };
   }
 }
